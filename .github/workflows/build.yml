@@ -36,8 +36,8 @@ jobs:
       - name: Build Vite
         run: npx vite build
 
-      - name: Build Windows portable
-        run: npx electron-builder --win portable
+      - name: Build Windows NSIS
+        run: npx electron-builder --win nsis
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -45,7 +45,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: GEO-Analyser-Windows
-          path: release/**/*.exe
+          path: |
+            release/**/*.exe
+            release/**/*.yml
           if-no-files-found: warn
 
   build-macos:

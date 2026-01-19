@@ -28,11 +28,16 @@
     "icon": "build/icon.png",
     "target": [
       {
-        "target": "portable",
+        "target": "nsis",
         "arch": ["x64"]
       }
     ],
-    "artifactName": "${productName}-${version}.${ext}"
+    "artifactName": "${productName}-Setup-${version}.${ext}",
+    "publish": {
+      "provider": "github",
+      "owner": "rychidesign",
+      "repo": "geo-analyser"
+    }
   },
   "mac": {
     "icon": "build/icon.png",
@@ -44,6 +49,15 @@
   },
   "nsis": {
     "oneClick": false,
-    "allowToChangeInstallationDirectory": true
+    "allowToChangeInstallationDirectory": true,
+    "allowElevation": true,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "GEO Analyser"
+  },
+  "publish": {
+    "provider": "github",
+    "owner": "rychidesign",
+    "repo": "geo-analyser"
   }
 }

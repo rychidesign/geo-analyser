@@ -1,4 +1,5 @@
 import { app, BrowserWindow, ipcMain } from 'electron';
+import { autoUpdater } from 'electron-updater';
 import path from 'path';
 import { initDatabase } from './database';
 import { initializeIpcHandlers } from './ipc/handlers';
@@ -105,12 +106,35 @@ app.whenReady().then(async () => {
   initializeIpcHandlers();
 
   createWindow();
+  
+  // Check for updates (only in production)
+  if (!isDev) {
+    autoUpdater.checkForUpdatesAndNotify();
+    
+    // Check for updates every 30 minutes
+    setInterval(() => {
+      autoUpdater.checkForUpdatesAndNotify();
+    }, 30 * 60 * 1000);
+  }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow();
     }
   });
+});
+
+// Auto-updater events
+autoUpdater.on('update-available', () => {
+  console.log('Update available');
+});
+
+autoUpdater.on('update-downloaded', () => {
+  console.log('Update downloaded');
+  // Notify user that update will be installed on restart
+  if (mainWindow) {
+    mainWindow.webContents.send('update-downloaded');
+  }
 });
 
 app.on('window-all-closed', () => {
