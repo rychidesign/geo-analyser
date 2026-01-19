@@ -7,12 +7,21 @@
   "files": [
     "dist",
     "dist-electron",
-    "public"
+    "public",
+    "!dist-electron/preload.cjs"
+  ],
+  "extraResources": [
+    {
+      "from": "dist-electron/preload.cjs",
+      "to": "preload.cjs"
+    },
+    {
+      "from": "dist-electron/sql-wasm.wasm",
+      "to": "sql-wasm.wasm"
+    }
   ],
   "asarUnpack": [
-    "**/*.wasm",
-    "dist-electron/*.wasm",
-    "dist-electron/preload.cjs"
+    "**/*.wasm"
   ],
   "icon": "build/icon.png",
   "win": {

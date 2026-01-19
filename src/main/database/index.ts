@@ -26,19 +26,12 @@ export async function initDatabase() {
     // Initialize SQL.js
     const SQL = await initSqlJs({
       locateFile: (file) => {
-        // In production (packaged), WASM is in the same directory as main.js
+        // In production (packaged), WASM is in resources folder
         if (app.isPackaged) {
-          const wasmPath = path.join(__dirname, file);
+          const wasmPath = path.join(process.resourcesPath, file);
           if (fs.existsSync(wasmPath)) {
             console.log('Found WASM file at (packaged):', wasmPath);
             return wasmPath;
-          }
-          
-          // Fallback: try resources/app.asar.unpacked
-          const unpackedPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'dist-electron', file);
-          if (fs.existsSync(unpackedPath)) {
-            console.log('Found WASM file at (unpacked):', unpackedPath);
-            return unpackedPath;
           }
         }
         

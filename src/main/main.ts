@@ -38,7 +38,7 @@ if (!gotTheLock) {
 function createWindow() {
   // Preload path - handle both dev and production
   const preloadPath = app.isPackaged
-    ? path.join(process.resourcesPath, 'app.asar.unpacked', 'dist-electron', 'preload.cjs')
+    ? path.join(process.resourcesPath, 'preload.cjs')
     : path.join(__dirname, 'preload.cjs');
 
   mainWindow = new BrowserWindow({
