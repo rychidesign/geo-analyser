@@ -27,6 +27,9 @@ jobs:
       - name: Copy SQL.js WASM
         run: npm run copy-sqljs-wasm
 
+      - name: Copy Preload Script
+        run: npm run copy-preload
+
       - name: Build TypeScript
         run: npx tsc -p tsconfig.node.json
 
@@ -63,6 +66,9 @@ jobs:
 
       - name: Copy SQL.js WASM
         run: npm run copy-sqljs-wasm
+
+      - name: Copy Preload Script
+        run: npm run copy-preload
 
       - name: Build TypeScript
         run: npx tsc -p tsconfig.node.json
