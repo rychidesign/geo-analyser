@@ -316,7 +316,7 @@ export function ScanResults({ scanId, onBack }: ScanResultsProps) {
               </div>
             </TooltipTrigger>
             <TooltipContent>
-              <p className="max-w-xs">Average sentiment score (-1.0 negative, 0.0 neutral, +1.0 positive)</p>
+              <p className="max-w-xs">Average sentiment when brand is mentioned (negative, neutral, or positive tone)</p>
             </TooltipContent>
           </Tooltip>
 

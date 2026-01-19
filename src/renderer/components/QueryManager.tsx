@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Checkbox } from './ui/checkbox';
 import { useToast } from '../hooks/use-toast';
-import { Sparkles, Plus, Trash2, Edit2 } from 'lucide-react';
+import { Sparkles, Plus, Trash2, Edit2, ChevronDown } from 'lucide-react';
 
 interface Query {
   id: string;
@@ -32,6 +32,7 @@ export function QueryManager({ projectId, brandVariations, domain, keywords, lan
   const [editingQuery, setEditingQuery] = useState<Query | null>(null);
   const [formData, setFormData] = useState({ queryText: '', type: 'informational' });
   const [includeBrandInQueries, setIncludeBrandInQueries] = useState(false);
+  const [isQueriesExpanded, setIsQueriesExpanded] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -193,11 +194,19 @@ export function QueryManager({ projectId, brandVariations, domain, keywords, lan
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Test Queries</CardTitle>
-              <CardDescription>
-                Questions that will be asked to AI models
-              </CardDescription>
+            <div 
+              className="flex items-center gap-2 cursor-pointer"
+              onClick={() => setIsQueriesExpanded(!isQueriesExpanded)}
+            >
+              <ChevronDown 
+                className={`w-5 h-5 transition-transform duration-200 ${isQueriesExpanded ? '' : '-rotate-90'}`}
+              />
+              <div>
+                <CardTitle>Test Queries ({queries.length})</CardTitle>
+                <CardDescription>
+                  Questions that will be asked to AI models
+                </CardDescription>
+              </div>
             </div>
             <div className="flex gap-4 items-center">
               <div className="flex items-center gap-2">
@@ -235,52 +244,54 @@ export function QueryManager({ projectId, brandVariations, domain, keywords, lan
             </div>
           </div>
         </CardHeader>
-        <CardContent>
-          {queries.length === 0 ? (
-            <div className="text-center py-12 text-zinc-500">
-              <p className="text-sm">No queries yet</p>
-              <p className="text-xs mt-1">Add queries manually or use AI generation</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {queries.map((query) => (
-                <div
-                  key={query.id}
-                  className="flex items-center gap-3 p-3 bg-zinc-800 hover:bg-zinc-750"
-                >
-                  <input
-                    type="checkbox"
-                    checked={query.isActive}
-                    onChange={() => handleToggle(query)}
-                    className="w-4 h-4"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm">{query.queryText}</p>
-                    <p className="text-xs text-zinc-500 mt-0.5 capitalize">{query.type}</p>
+        {isQueriesExpanded && (
+          <CardContent>
+            {queries.length === 0 ? (
+              <div className="text-center py-12 text-zinc-500">
+                <p className="text-sm">No queries yet</p>
+                <p className="text-xs mt-1">Add queries manually or use AI generation</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {queries.map((query) => (
+                  <div
+                    key={query.id}
+                    className="flex items-center gap-3 p-3 bg-zinc-800 hover:bg-zinc-750"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={query.isActive}
+                      onChange={() => handleToggle(query)}
+                      className="w-4 h-4"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm">{query.queryText}</p>
+                      <p className="text-xs text-zinc-500 mt-0.5 capitalize">{query.type}</p>
+                    </div>
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => handleEdit(query)}
+                      >
+                        <Edit2 className="w-3 h-3" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-red-500 hover:text-red-400"
+                        onClick={() => handleDelete(query.id)}
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={() => handleEdit(query)}
-                    >
-                      <Edit2 className="w-3 h-3" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-red-500 hover:text-red-400"
-                      onClick={() => handleDelete(query.id)}
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        )}
       </Card>
 
       <Dialog open={showAddDialog} onOpenChange={(open) => {
