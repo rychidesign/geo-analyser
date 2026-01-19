@@ -11,7 +11,8 @@
   ],
   "asarUnpack": [
     "**/*.wasm",
-    "dist-electron/*.wasm"
+    "dist-electron/*.wasm",
+    "dist-electron/preload.cjs"
   ],
   "icon": "build/icon.png",
   "win": {

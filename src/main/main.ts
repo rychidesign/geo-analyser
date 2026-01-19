@@ -6,9 +6,12 @@ import { initializeIpcHandlers } from './ipc/handlers';
 // __dirname is available natively in CommonJS
 declare const __dirname: string;
 
-process.env.DIST = path.join(__dirname, '../dist');
+process.env.DIST = app.isPackaged
+  ? path.join(process.resourcesPath, 'app.asar', 'dist')
+  : path.join(__dirname, '../dist');
+  
 process.env.VITE_PUBLIC = app.isPackaged
-  ? process.env.DIST
+  ? path.join(process.resourcesPath, 'app.asar', 'public')
   : path.join(process.env.DIST, '../public');
 
 let mainWindow: BrowserWindow | null = null;
@@ -33,6 +36,11 @@ if (!gotTheLock) {
 }
 
 function createWindow() {
+  // Preload path - handle both dev and production
+  const preloadPath = app.isPackaged
+    ? path.join(process.resourcesPath, 'app.asar.unpacked', 'dist-electron', 'preload.cjs')
+    : path.join(__dirname, 'preload.cjs');
+
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
@@ -41,7 +49,7 @@ function createWindow() {
     backgroundColor: '#0a0a0a',
     icon: path.join(process.env.VITE_PUBLIC!, 'icon.png'),
     webPreferences: {
-      preload: path.join(__dirname, 'preload.cjs'),
+      preload: preloadPath,
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false
