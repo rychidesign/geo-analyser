@@ -1,0 +1,35 @@
+{
+  "appId": "com.geoanalyser.app",
+  "productName": "GEO Analyser",
+  "directories": {
+    "output": "release/${version}"
+  },
+  "files": [
+    "dist",
+    "dist-electron",
+    "public"
+  ],
+  "icon": "build/icon.png",
+  "win": {
+    "icon": "build/icon.png",
+    "target": [
+      {
+        "target": "portable",
+        "arch": ["x64"]
+      }
+    ],
+    "artifactName": "${productName}-${version}.${ext}"
+  },
+  "mac": {
+    "icon": "build/icon.png",
+    "category": "public.app-category.developer-tools"
+  },
+  "linux": {
+    "icon": "build/icon.png",
+    "category": "Development"
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true
+  }
+}

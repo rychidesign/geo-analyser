@@ -1,0 +1,83 @@
+name: Build GEO Analyser
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Copy SQL.js WASM
+        run: npm run copy-sqljs-wasm
+
+      - name: Build TypeScript
+        run: npx tsc -p tsconfig.node.json
+
+      - name: Build Vite
+        run: npx vite build
+
+      - name: Build Windows portable
+        run: npx electron-builder --win portable
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Windows build
+        uses: actions/upload-artifact@v4
+        with:
+          name: GEO-Analyser-Windows
+          path: release/**/*.exe
+          if-no-files-found: warn
+
+  build-macos:
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Copy SQL.js WASM
+        run: npm run copy-sqljs-wasm
+
+      - name: Build TypeScript
+        run: npx tsc -p tsconfig.node.json
+
+      - name: Build Vite
+        run: npx vite build
+
+      - name: Build macOS
+        run: npx electron-builder --mac
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload macOS build
+        uses: actions/upload-artifact@v4
+        with:
+          name: GEO-Analyser-macOS
+          path: release/**/*.dmg
+          if-no-files-found: warn
