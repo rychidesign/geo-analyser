@@ -9,6 +9,10 @@
     "dist-electron",
     "public"
   ],
+  "asarUnpack": [
+    "**/*.wasm",
+    "dist-electron/*.wasm"
+  ],
   "icon": "build/icon.png",
   "win": {
     "icon": "build/icon.png",

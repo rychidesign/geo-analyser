@@ -26,11 +26,27 @@ export async function initDatabase() {
     // Initialize SQL.js
     const SQL = await initSqlJs({
       locateFile: (file) => {
-        // Use the WASM file from public folder (copied by postinstall script)
-        const wasmPath = path.join(process.cwd(), 'public', file);
-        if (fs.existsSync(wasmPath)) {
-          console.log('Found WASM file at:', wasmPath);
-          return wasmPath;
+        // In production (packaged), WASM is in the same directory as main.js
+        if (app.isPackaged) {
+          const wasmPath = path.join(__dirname, file);
+          if (fs.existsSync(wasmPath)) {
+            console.log('Found WASM file at (packaged):', wasmPath);
+            return wasmPath;
+          }
+          
+          // Fallback: try resources/app.asar.unpacked
+          const unpackedPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'dist-electron', file);
+          if (fs.existsSync(unpackedPath)) {
+            console.log('Found WASM file at (unpacked):', unpackedPath);
+            return unpackedPath;
+          }
+        }
+        
+        // In development, use public folder
+        const publicPath = path.join(process.cwd(), 'public', file);
+        if (fs.existsSync(publicPath)) {
+          console.log('Found WASM file at:', publicPath);
+          return publicPath;
         }
         
         // Fallback to node_modules
