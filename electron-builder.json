@@ -1,6 +1,6 @@
 {
   "appId": "com.geoanalyser.app",
-  "productName": "GEO Analyser",
+  "productName": "GEO-Analyser",
   "directories": {
     "output": "release/${version}"
   },
