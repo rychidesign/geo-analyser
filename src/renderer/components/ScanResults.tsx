@@ -8,6 +8,7 @@ import { EmptyState } from './ui/empty-state';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 
 interface ScanResultsProps {
   scanId: string;
@@ -41,37 +42,38 @@ export function ScanResults({ scanId, onBack }: ScanResultsProps) {
   const highlightAndRenderMarkdown = (text: string) => {
     if (!project || !text) return text;
 
-    const brandVariations = JSON.parse(project.brandVariations || '[]');
-    const keywords = JSON.parse(project.targetKeywords || '[]');
-    const domain = project.domain;
+    try {
+      const brandVariations = JSON.parse(project.brandVariations || '[]');
+      const keywords = JSON.parse(project.targetKeywords || '[]');
+      const domain = project.domain;
 
-    // Build regex pattern: brands/domain (green) and keywords (orange)
-    const brandPattern = [...brandVariations, domain].filter(Boolean).map(b => 
-      b.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    ).join('|');
-    const keywordPattern = keywords.map((k: string) => 
-      k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    ).join('|');
+      // Build regex pattern: brands/domain (green) and keywords (orange)
+      const brandPattern = [...brandVariations, domain].filter(Boolean).map((b: string) => 
+        b.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      ).join('|');
+      const keywordPattern = keywords.map((k: string) => 
+        k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      ).join('|');
 
-    let result = text;
-    
-    // Highlight brands/domain in green (using markdown bold + special markers)
-    if (brandPattern) {
-      result = result.replace(
-        new RegExp(`\\b(${brandPattern})\\b`, 'gi'),
-        '**🟢$1🟢**'
-      );
+      let result = text;
+      
+      // Highlight keywords FIRST (orange) - to avoid conflicts with brands
+      if (keywordPattern) {
+        const keywordRegex = new RegExp(`(${keywordPattern}[a-záčďéěíňóřšťúůýž]*)`, 'gi');
+        result = result.replace(keywordRegex, '<mark class="keyword-highlight">$1</mark>');
+      }
+
+      // Then highlight brands/domain (green)
+      if (brandPattern) {
+        const brandRegex = new RegExp(`(${brandPattern})`, 'gi');
+        result = result.replace(brandRegex, '<mark class="brand-highlight">$1</mark>');
+      }
+
+      return result;
+    } catch (error) {
+      console.error('Highlighting error:', error);
+      return text;
     }
-
-    // Highlight keywords in orange
-    if (keywordPattern) {
-      result = result.replace(
-        new RegExp(`\\b(${keywordPattern})\\b`, 'gi'),
-        '**🟠$1🟠**'
-      );
-    }
-
-    return result;
   };
 
   useEffect(() => {
@@ -433,31 +435,10 @@ export function ScanResults({ scanId, onBack }: ScanResultsProps) {
                 </div>
 
                 {/* AI Response */}
-                <div className="bg-zinc-950 rounded p-3 text-sm text-zinc-300 leading-relaxed prose prose-invert prose-sm max-w-none">
+                <div className="bg-zinc-950 rounded p-3 text-sm text-zinc-300 leading-relaxed prose prose-invert prose-sm max-w-none [&_mark.brand-highlight]:bg-green-500/20 [&_mark.brand-highlight]:text-green-400 [&_mark.brand-highlight]:px-1 [&_mark.brand-highlight]:rounded [&_mark.keyword-highlight]:bg-orange-500/20 [&_mark.keyword-highlight]:text-orange-400 [&_mark.keyword-highlight]:px-1 [&_mark.keyword-highlight]:rounded">
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
-                    components={{
-                      strong: ({ children }) => {
-                        const text = String(children);
-                        // Green highlighting for brands
-                        if (text.startsWith('🟢') && text.endsWith('🟢')) {
-                          return (
-                            <span className="bg-green-500/20 text-green-400 px-1 rounded font-normal">
-                              {text.slice(2, -2)}
-                            </span>
-                          );
-                        }
-                        // Orange highlighting for keywords
-                        if (text.startsWith('🟠') && text.endsWith('🟠')) {
-                          return (
-                            <span className="bg-orange-500/20 text-orange-400 px-1 rounded font-normal">
-                              {text.slice(2, -2)}
-                            </span>
-                          );
-                        }
-                        return <strong>{children}</strong>;
-                      },
-                    }}
+                    rehypePlugins={[rehypeRaw]}
                   >
                     {highlightAndRenderMarkdown(result.aiResponseRaw)}
                   </ReactMarkdown>

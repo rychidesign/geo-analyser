@@ -20,15 +20,17 @@ export async function callOpenAI(
     body: JSON.stringify({
       model,
       messages: [{ role: 'user', content: prompt }],
-      temperature: 0.7,
+      // temperature removed - GPT-5 models use default value (1)
     }),
   });
 
   if (!response.ok) {
-    throw new Error(`OpenAI API error: ${response.statusText}`);
+    const errorBody = await response.text();
+    throw new Error(`OpenAI API error: ${response.status} - ${errorBody}`);
   }
 
   const data: any = await response.json();
+  
   return {
     text: data.choices[0]?.message?.content || '',
     model,
@@ -56,13 +58,15 @@ export async function callAnthropic(
   });
 
   if (!response.ok) {
-    throw new Error(`Anthropic API error: ${response.statusText}`);
+    const errorBody = await response.text();
+    throw new Error(`Anthropic API error: ${response.status} - ${errorBody}`);
   }
 
   const data: any = await response.json();
+  
   return {
     text: data.content[0]?.text || '',
-    model,
+    model: data.model || model,
     provider: 'anthropic',
   };
 }

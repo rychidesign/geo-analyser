@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Button } from './ui/button';
-import { Settings as SettingsIcon, Plus, FolderOpen } from 'lucide-react';
+import { Settings as SettingsIcon, Plus, FolderOpen, Loader2 } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { useScanQueue } from '../contexts/ScanQueueContext';
 
 interface Project {
   id: string;
@@ -18,6 +19,7 @@ interface SidebarProps {
 
 export function Sidebar({ currentView, currentProjectId, onViewChange, onNewProject }: SidebarProps) {
   const [projects, setProjects] = useState<Project[]>([]);
+  const { getActiveProjectJob } = useScanQueue();
 
   useEffect(() => {
     loadProjects();
@@ -98,21 +100,41 @@ export function Sidebar({ currentView, currentProjectId, onViewChange, onNewProj
             </div>
           ) : (
             <div className="space-y-1">
-              {projects.map((project) => (
-                <button
-                  key={project.id}
-                  onClick={() => onViewChange('project', project.id)}
-                  className={cn(
-                    'w-full text-left px-3 py-2 text-sm transition-colors',
-                    currentView === 'project' && currentProjectId === project.id
-                      ? 'bg-zinc-800 text-zinc-100'
-                      : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50'
-                  )}
-                >
-                  <div className="font-medium">{project.name}</div>
-                  <div className="text-xs text-zinc-600 truncate">{project.domain}</div>
-                </button>
-              ))}
+              {projects.map((project) => {
+                const activeJob = getActiveProjectJob(project.id);
+                return (
+                  <button
+                    key={project.id}
+                    onClick={() => onViewChange('project', project.id)}
+                    className={cn(
+                      'w-full text-left px-3 py-2 text-sm transition-colors relative',
+                      currentView === 'project' && currentProjectId === project.id
+                        ? 'bg-zinc-800 text-zinc-100'
+                        : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50'
+                    )}
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1">
+                        <div className="font-medium">{project.name}</div>
+                        <div className="text-xs text-zinc-600 truncate">{project.domain}</div>
+                      </div>
+                      {activeJob && (
+                        <div className="flex-shrink-0">
+                          {activeJob.status === 'running' && (
+                            <Loader2 className="w-3 h-3 animate-spin text-blue-500" />
+                          )}
+                          {activeJob.status === 'paused' && (
+                            <div className="w-3 h-3 rounded-full bg-yellow-500" />
+                          )}
+                          {activeJob.status === 'queued' && (
+                            <div className="w-3 h-3 rounded-full bg-zinc-500" />
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
@@ -121,7 +143,7 @@ export function Sidebar({ currentView, currentProjectId, onViewChange, onNewProj
       {/* Footer */}
       <div className="p-4 border-t border-zinc-800">
         <div className="text-xs text-zinc-500">
-          Version <span className="text-zinc-400">1.0.6</span>
+          Version <span className="text-zinc-400">1.0.7</span>
         </div>
       </div>
     </div>

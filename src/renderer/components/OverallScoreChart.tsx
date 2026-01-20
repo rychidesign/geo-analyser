@@ -160,8 +160,6 @@ export function OverallScoreChart({ scans }: OverallScoreChartProps) {
     const day = String(date.getDate()).padStart(2, '0');
     const dayKey = `${year}-${month}-${day}`;
 
-    console.log('Scan date:', date, 'Key:', dayKey, 'Score:', scan.overallScore);
-
     if (!acc[dayKey]) {
       acc[dayKey] = { scores: [], date: dayKey };
     }
@@ -176,8 +174,6 @@ export function OverallScoreChart({ scans }: OverallScoreChartProps) {
       count: data.scores.length,
     }))
     .sort((a, b) => a.date.localeCompare(b.date));
-
-  console.log('Chart data:', chartData);
 
   return (
     <Card className={`overflow-hidden transition-all duration-1000 ease-in-out ${isExpanded ? 'p-4' : 'px-4 pt-4 pb-1'}`}>
@@ -195,7 +191,7 @@ export function OverallScoreChart({ scans }: OverallScoreChartProps) {
         className="relative overflow-hidden"
         style={{
           transition: 'height 1s ease-in-out',
-          height: isExpanded ? '480px' : '80px'
+          height: isExpanded ? '400px' : '80px'
         }}
       >
         <div 
@@ -233,8 +229,8 @@ export function OverallScoreChart({ scans }: OverallScoreChartProps) {
             pointerEvents: isExpanded ? 'auto' : 'none'
           }}
         >
-          <div className="space-y-6">
-            <ResponsiveContainer width="100%" height={350}>
+          <div>
+            <ResponsiveContainer width="100%" height={380}>
               <LineChart data={enrichedData.length > 0 ? enrichedData : chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                 <XAxis 
                   dataKey="date" 
@@ -268,8 +264,8 @@ export function OverallScoreChart({ scans }: OverallScoreChartProps) {
                   }}
                 />
                 <Legend 
-                  wrapperStyle={{ paddingTop: '10px' }}
-                  iconType="line"
+                  wrapperStyle={{ paddingTop: '10px', fontSize: '12px' }}
+                  iconSize={0}
                 />
                 <Line 
                   type="monotone" 
@@ -318,27 +314,6 @@ export function OverallScoreChart({ scans }: OverallScoreChartProps) {
                 )}
               </LineChart>
             </ResponsiveContainer>
-            
-            <div className="grid grid-cols-3 gap-4">
-              <div className="bg-zinc-900 rounded-lg p-4">
-                <div className="text-sm text-zinc-400 mb-1">Latest Score</div>
-                <div className="text-2xl font-bold text-blue-500">
-                  {chartData[chartData.length - 1]?.score || 0}
-                </div>
-              </div>
-              <div className="bg-zinc-900 rounded-lg p-4">
-                <div className="text-sm text-zinc-400 mb-1">Average Score</div>
-                <div className="text-2xl font-bold">
-                  {Math.round(chartData.reduce((sum, d) => sum + d.score, 0) / chartData.length)}
-                </div>
-              </div>
-              <div className="bg-zinc-900 rounded-lg p-4">
-                <div className="text-sm text-zinc-400 mb-1">Total Scans</div>
-                <div className="text-2xl font-bold">
-                  {chartData.reduce((sum, d) => sum + d.count, 0)}
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>

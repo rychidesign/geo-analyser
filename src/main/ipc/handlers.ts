@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron';
+import { ipcMain, BrowserWindow } from 'electron';
 import * as db from '../database/operations';
 import { safeStorage } from 'electron';
 
@@ -8,8 +8,19 @@ import { safeStorage } from 'electron';
 
 ipcMain.handle('settings:save', async (_, provider: string, apiKey: string, model: string) => {
   try {
-    // Encrypt the API key using Electron's safeStorage
-    const encryptedKey = safeStorage.encryptString(apiKey).toString('base64');
+    let encryptedKey: string;
+    
+    if (apiKey && apiKey.trim().length > 0) {
+      // New API key provided - encrypt it
+      encryptedKey = safeStorage.encryptString(apiKey).toString('base64');
+    } else {
+      // Empty string = keep existing key
+      const existingSetting = await db.getSetting(provider);
+      if (!existingSetting) {
+        throw new Error('No existing API key found. Please provide an API key.');
+      }
+      encryptedKey = existingSetting.encryptedKey;
+    }
     
     const setting = await db.saveSetting({
       provider,
@@ -261,18 +272,73 @@ ipcMain.handle('scans:getResults', async (_, scanId: string) => {
 // SCAN HANDLERS
 // ============================================
 
-import { runScan, generateQueries } from '../scanner/engine';
+import { generateQueries } from '../scanner/engine';
+import { scanQueue } from '../scanner/queue';
+
+// Listen to queue updates and broadcast to all windows
+scanQueue.on('queue-updated', (jobs) => {
+  // Broadcast to all renderer windows
+  BrowserWindow.getAllWindows().forEach(window => {
+    window.webContents.send('scan:queue-updated', jobs);
+  });
+});
 
 ipcMain.handle('scan:run', async (event, projectId: string) => {
   try {
-    const scanId = await runScan(projectId, (progress) => {
-      // Send progress updates to renderer
-      event.sender.send('scan:progress', progress);
-    });
-    
-    return { success: true, scanId };
+    const jobId = await scanQueue.enqueueScan(projectId);
+    return { success: true, jobId };
   } catch (error) {
-    console.error('Failed to run scan:', error);
+    console.error('Failed to enqueue scan:', error);
+    return { success: false, error: String(error) };
+  }
+});
+
+ipcMain.handle('scan:pause', async (_, jobId: string) => {
+  try {
+    const success = scanQueue.pauseScan(jobId);
+    return { success };
+  } catch (error) {
+    console.error('Failed to pause scan:', error);
+    return { success: false, error: String(error) };
+  }
+});
+
+ipcMain.handle('scan:resume', async (_, jobId: string) => {
+  try {
+    const success = scanQueue.resumeScan(jobId);
+    return { success };
+  } catch (error) {
+    console.error('Failed to resume scan:', error);
+    return { success: false, error: String(error) };
+  }
+});
+
+ipcMain.handle('scan:cancel', async (_, jobId: string) => {
+  try {
+    const success = scanQueue.cancelScan(jobId);
+    return { success };
+  } catch (error) {
+    console.error('Failed to cancel scan:', error);
+    return { success: false, error: String(error) };
+  }
+});
+
+ipcMain.handle('scan:get-all-jobs', async () => {
+  try {
+    const jobs = scanQueue.getAllJobs();
+    return { success: true, jobs };
+  } catch (error) {
+    console.error('Failed to get scan jobs:', error);
+    return { success: false, error: String(error) };
+  }
+});
+
+ipcMain.handle('scan:get-project-jobs', async (_, projectId: string) => {
+  try {
+    const jobs = scanQueue.getJobsByProject(projectId);
+    return { success: true, jobs };
+  } catch (error) {
+    console.error('Failed to get project scan jobs:', error);
     return { success: false, error: String(error) };
   }
 });

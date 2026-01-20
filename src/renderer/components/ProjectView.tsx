@@ -2,11 +2,12 @@ import { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
-import { Play, Settings as SettingsIcon } from 'lucide-react';
+import { Play, Pause, Square, Settings as SettingsIcon, Loader2 } from 'lucide-react';
 import { EditProjectDialog } from './EditProjectDialog';
 import { QueryManager } from './QueryManager';
 import { OverallScoreChart } from './OverallScoreChart';
 import { useToast } from '../hooks/use-toast';
+import { useScanQueue } from '../contexts/ScanQueueContext';
 
 interface Project {
   id: string;
@@ -28,25 +29,19 @@ export function ProjectView({ projectId, onProjectDeleted, onViewScanResults }: 
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
   const [showEditDialog, setShowEditDialog] = useState(false);
-  const [scanning, setScanning] = useState(false);
-  const [scanProgress, setScanProgress] = useState({ total: 0, completed: 0, current: '' });
   const [scans, setScans] = useState<any[]>([]);
   const [queries, setQueries] = useState<any[]>([]);
+  const [metrics, setMetrics] = useState({ visibilityRate: 0, avgSentiment: 0, citationRate: 0 });
   const { toast } = useToast();
+  const { getActiveProjectJob, pauseScan, resumeScan, cancelScan } = useScanQueue();
+  
+  // Get active job for this project
+  const activeJob = getActiveProjectJob(projectId);
 
   useEffect(() => {
     loadProject();
     loadScans();
     loadQueries();
-
-    // Subscribe to scan progress
-    const unsubscribe = window.electronAPI.scans.onProgress((progress: any) => {
-      setScanProgress(progress);
-    });
-
-    return () => {
-      unsubscribe();
-    };
   }, [projectId]);
 
   const loadProject = async () => {
@@ -68,9 +63,60 @@ export function ProjectView({ projectId, onProjectDeleted, onViewScanResults }: 
       const result = await window.electronAPI.scans.getByProject(projectId);
       if (result.success && result.scans) {
         setScans(result.scans);
+        // Calculate metrics from all scans
+        await calculateMetrics(result.scans);
       }
     } catch (error) {
       console.error('Failed to load scans:', error);
+    }
+  };
+
+  const calculateMetrics = async (scansData: any[]) => {
+    try {
+      // Load results for all scans
+      const allResults = await Promise.all(
+        scansData.map(async (scan) => {
+          const result = await window.electronAPI.scans.getResults(scan.id);
+          return result.success ? result.results : [];
+        })
+      );
+
+      // Flatten all results
+      const flatResults = allResults.flat();
+
+      if (flatResults.length === 0) {
+        setMetrics({ visibilityRate: 0, avgSentiment: 0, citationRate: 0 });
+        return;
+      }
+
+      // Calculate visibility rate
+      const visibleCount = flatResults.filter((r: any) => {
+        const metrics = r.metricsJson ? JSON.parse(r.metricsJson) : null;
+        return metrics?.is_visible;
+      }).length;
+      const visibilityRate = Math.round((visibleCount / flatResults.length) * 100);
+
+      // Calculate avg sentiment
+      const sentiments = flatResults
+        .map((r: any) => {
+          const metrics = r.metricsJson ? JSON.parse(r.metricsJson) : null;
+          return metrics?.sentiment_score || 0;
+        })
+        .filter((s: number) => s !== 0);
+      const avgSentiment = sentiments.length > 0
+        ? sentiments.reduce((sum: number, s: number) => sum + s, 0) / sentiments.length
+        : 0;
+
+      // Calculate citation rate
+      const citedCount = flatResults.filter((r: any) => {
+        const metrics = r.metricsJson ? JSON.parse(r.metricsJson) : null;
+        return metrics?.citation_found;
+      }).length;
+      const citationRate = Math.round((citedCount / flatResults.length) * 100);
+
+      setMetrics({ visibilityRate, avgSentiment, citationRate });
+    } catch (error) {
+      console.error('Failed to calculate metrics:', error);
     }
   };
 
@@ -186,69 +232,121 @@ export function ProjectView({ projectId, onProjectDeleted, onViewScanResults }: 
           </TooltipContent>
         </Tooltip>
         
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-normal text-zinc-500">Visibility</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-light">-%</div>
-          </CardContent>
-        </Card>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Card className="cursor-help">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-normal text-zinc-500">Visibility</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-light">
+                  {scans.length > 0 ? `${metrics.visibilityRate}%` : '-%'}
+                </div>
+              </CardContent>
+            </Card>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Percentage of queries where your brand/domain was mentioned in AI responses</p>
+          </TooltipContent>
+        </Tooltip>
       </div>
 
       {/* Overall Score Chart */}
       {scans.length > 0 && (
-        <div className="mb-4">
+        <div className="mb-12">
           <OverallScoreChart scans={scans} />
         </div>
       )}
 
       {/* Actions */}
       <div className="mb-8">
-        <Button
-          className="gap-2"
-          onClick={async () => {
-            setScanning(true);
-            try {
-              const result = await window.electronAPI.scans.run(projectId);
-              if (result.success) {
-                // Reload scans to show the new one
-                await loadScans();
-                
-                toast({
-                  title: 'Scan Completed',
-                  description: 'View results in the Recent Scans section',
-                });
-                
-                // Navigate to scan results if scanId is returned
-                if (result.scanId) {
-                  onViewScanResults(result.scanId);
+        {!activeJob ? (
+          <Button
+            className="gap-2"
+            onClick={async () => {
+              try {
+                const result = await window.electronAPI.scans.run(projectId);
+                if (result.success) {
+                  toast({
+                    title: 'Scan Queued',
+                    description: 'Scan has been added to the queue',
+                  });
+                } else {
+                  throw new Error(result.error);
                 }
-              } else {
-                throw new Error(result.error);
+              } catch (error) {
+                toast({
+                  title: 'Scan Failed',
+                  description: String(error),
+                  variant: 'destructive',
+                });
               }
-            } catch (error) {
-              toast({
-                title: 'Scan Failed',
-                description: String(error),
-                variant: 'destructive',
-              });
-            } finally {
-              setScanning(false);
-            }
-          }}
-          disabled={scanning}
-        >
-          <Play className="w-4 h-4" />
-          {scanning ? 'Running Scan...' : 'Run Scan'}
-        </Button>
+            }}
+          >
+            <Play className="w-4 h-4" />
+            Run Scan
+          </Button>
+        ) : (
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              {activeJob.status === 'running' && <Loader2 className="w-4 h-4 animate-spin text-blue-500" />}
+              <span className="text-sm font-medium">
+                {activeJob.status === 'queued' && '⏳ Queued'}
+                {activeJob.status === 'running' && '🔄 Running...'}
+                {activeJob.status === 'paused' && '⏸️ Paused'}
+              </span>
+            </div>
+            
+            <div className="flex gap-2">
+              {activeJob.status === 'running' && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  onClick={() => pauseScan(activeJob.id)}
+                >
+                  <Pause className="w-3 h-3" />
+                  Pause
+                </Button>
+              )}
+              
+              {activeJob.status === 'paused' && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  onClick={() => resumeScan(activeJob.id)}
+                >
+                  <Play className="w-3 h-3" />
+                  Resume
+                </Button>
+              )}
+              
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2 text-red-500 hover:text-red-400"
+                onClick={() => {
+                  cancelScan(activeJob.id);
+                  toast({
+                    title: 'Scan Cancelled',
+                    description: 'The scan has been stopped',
+                  });
+                }}
+              >
+                <Square className="w-3 h-3" />
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
         
-        {scanning && (
+        {activeJob && activeJob.status === 'running' && (
           <div className="mt-4 text-sm text-zinc-500">
             <div className="mb-1">
-              Progress: {scanProgress.completed} / {scanProgress.total}
+              Progress: {activeJob.progress.completed} / {activeJob.progress.total}
             </div>
-            <div className="text-xs">{scanProgress.current}</div>
+            <div className="text-xs">{activeJob.progress.current}</div>
           </div>
         )}
       </div>

@@ -6,6 +6,7 @@ import { ProjectView } from './components/ProjectView';
 import { ScanResults } from './components/ScanResults';
 import { NewProjectDialog } from './components/NewProjectDialog';
 import { useToast } from './hooks/use-toast';
+import { ScanQueueProvider } from './contexts/ScanQueueContext';
 
 function App() {
   const [currentView, setCurrentView] = useState<'settings' | 'project' | 'scan-results'>('settings');
@@ -55,7 +56,7 @@ function App() {
   };
 
   return (
-    <>
+    <ScanQueueProvider>
       <div className="h-screen bg-zinc-950 text-zinc-100 flex overflow-hidden">
         <Sidebar
           currentView={currentView}
@@ -89,7 +90,7 @@ function App() {
       />
 
       <Toaster />
-    </>
+    </ScanQueueProvider>
   );
 }
 

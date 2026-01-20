@@ -52,10 +52,25 @@ const electronAPI = {
       ipcRenderer.invoke('scans:getResults', scanId),
     run: (projectId) => 
       ipcRenderer.invoke('scan:run', projectId),
+    pause: (jobId) => 
+      ipcRenderer.invoke('scan:pause', jobId),
+    resume: (jobId) => 
+      ipcRenderer.invoke('scan:resume', jobId),
+    cancel: (jobId) => 
+      ipcRenderer.invoke('scan:cancel', jobId),
+    getAllJobs: () => 
+      ipcRenderer.invoke('scan:get-all-jobs'),
+    getProjectJobs: (projectId) => 
+      ipcRenderer.invoke('scan:get-project-jobs', projectId),
     onProgress: (callback) => {
       const subscription = (event, progress) => callback(progress);
       ipcRenderer.on('scan:progress', subscription);
       return () => ipcRenderer.removeListener('scan:progress', subscription);
+    },
+    onQueueUpdated: (callback) => {
+      const subscription = (event, jobs) => callback(jobs);
+      ipcRenderer.on('scan:queue-updated', subscription);
+      return () => ipcRenderer.removeListener('scan:queue-updated', subscription);
     },
   },
 };

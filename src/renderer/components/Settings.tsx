@@ -19,28 +19,43 @@ const PROVIDERS: ProviderConfig[] = [
   {
     id: 'openai',
     name: 'OpenAI',
-    models: ['gpt-4o', 'gpt-4o-mini', 'o1', 'o1-mini'],
-    defaultModel: 'gpt-4o',
+    models: [
+      'gpt-5',           // ✅ GPT-5 (nejnovější)
+      'gpt-5-mini',      // GPT-5 Mini
+      'gpt-5-nano',      // GPT-5 Nano (nejrychlejší)
+      'gpt-4o',          // GPT-4o (starší, stabilní)
+      'o1-preview',      // o1 Preview
+    ],
+    defaultModel: 'gpt-5',
     keyPlaceholder: 'sk-...',
   },
   {
     id: 'anthropic',
     name: 'Anthropic',
-    models: ['claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022', 'claude-3-opus-20240229'],
-    defaultModel: 'claude-3-5-sonnet-20241022',
+    models: [
+      'claude-sonnet-4-5-20250929',  // ✅ Claude 4.5 Sonnet (nejnovější!)
+      'claude-opus-4-20250514',      // Claude 4 Opus
+      'claude-sonnet-4-20250514',    // Claude 4 Sonnet
+    ],
+    defaultModel: 'claude-sonnet-4-5-20250929',
     keyPlaceholder: 'sk-ant-...',
   },
   {
     id: 'google',
     name: 'Google AI',
-    models: ['gemini-2.0-flash-exp', 'gemini-2.0-flash-thinking-exp-01-21', 'gemini-1.5-pro-002', 'gemini-1.5-flash-002'],
-    defaultModel: 'gemini-2.0-flash-exp',
+    models: [
+      'gemini-3-pro-preview',      // ✅ Gemini 3 Pro (nejnovější)
+      'gemini-3-flash-preview',    // Gemini 3 Flash (rychlý)
+      'gemini-2.5-flash',          // Gemini 2.5 Flash
+      'gemini-2.5-flash-lite',     // Gemini 2.5 Flash Lite (nejrychlejší)
+    ],
+    defaultModel: 'gemini-3-pro-preview',
     keyPlaceholder: 'AIza...',
   },
   {
     id: 'perplexity',
     name: 'Perplexity',
-    models: ['sonar-pro', 'sonar', 'sonar-reasoning'],
+    models: ['sonar-pro', 'sonar-reasoning', 'sonar'],
     defaultModel: 'sonar-pro',
     keyPlaceholder: 'pplx-...',
   },
@@ -76,7 +91,9 @@ export function Settings() {
 
   const handleSave = async (providerId: string) => {
     const config = configs[providerId];
-    if (!config?.apiKey) {
+    
+    // If no API key AND not already configured, show error
+    if (!config?.apiKey && !config?.isConfigured) {
       toast({
         title: 'Error',
         description: 'Please enter an API key',
@@ -90,14 +107,15 @@ export function Settings() {
     try {
       const result = await window.electronAPI.settings.save(
         providerId,
-        config.apiKey,
+        config.apiKey || '', // empty string = keep existing key
         config.model || PROVIDERS.find((p) => p.id === providerId)!.defaultModel
       );
 
       if (result.success) {
+        const actionText = config.apiKey ? 'API key saved' : 'Settings updated';
         toast({
           title: 'Saved',
-          description: `${PROVIDERS.find((p) => p.id === providerId)?.name} API key saved successfully`,
+          description: `${PROVIDERS.find((p) => p.id === providerId)?.name} ${actionText} successfully`,
         });
         
         setConfigs({

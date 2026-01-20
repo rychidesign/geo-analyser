@@ -33,24 +33,24 @@ export function QueryManager({ projectId, brandVariations, domain, keywords, lan
   const [formData, setFormData] = useState({ queryText: '', type: 'informational' });
   const [includeBrandInQueries, setIncludeBrandInQueries] = useState(false);
   const [isQueriesExpanded, setIsQueriesExpanded] = useState(false);
+  const [isFirstLoad, setIsFirstLoad] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
-    loadQueries();
+    loadQueries(true); // First load
   }, [projectId]);
 
-  // Auto-expand if no queries
-  useEffect(() => {
-    if (queries.length === 0) {
-      setIsQueriesExpanded(true);
-    }
-  }, [queries]);
-
-  const loadQueries = async () => {
+  const loadQueries = async (isInitialLoad: boolean = false) => {
     try {
       const result = await window.electronAPI.queries.getByProject(projectId);
       if (result.success && result.queries) {
         setQueries(result.queries);
+        // Auto-expand ONLY on first load and if no queries exist
+        if (isInitialLoad && result.queries.length === 0) {
+          setIsQueriesExpanded(true);
+        }
+        // On subsequent loads (after delete/add), preserve the expanded state
+        // Don't change isQueriesExpanded
       }
     } catch (error) {
       console.error('Failed to load queries:', error);

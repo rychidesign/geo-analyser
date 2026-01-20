@@ -1,6 +1,6 @@
 {
   "name": "geo-analyser",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Generative Engine Optimization Desktop App",
   "main": "dist-electron/main.js",
   "scripts": {
@@ -49,6 +49,7 @@
     "react-dom": "^18.2.0",
     "react-markdown": "^10.1.0",
     "recharts": "^2.10.3",
+    "rehype-raw": "^7.0.0",
     "remark-gfm": "^4.0.1",
     "sql.js": "^1.10.3",
     "tailwind-merge": "^2.2.0",
