@@ -54,7 +54,12 @@ export function OverallScoreChart({ scans }: OverallScoreChartProps) {
           const date = new Date(
             typeof scan.createdAt === 'number' ? scan.createdAt * 1000 : scan.createdAt
           );
-          const dayKey = date.toISOString().split('T')[0];
+          
+          // Use local date instead of UTC
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          const dayKey = `${year}-${month}-${day}`;
 
           if (!groupedByDay[dayKey]) {
             groupedByDay[dayKey] = {
@@ -148,7 +153,14 @@ export function OverallScoreChart({ scans }: OverallScoreChartProps) {
     const date = new Date(
       typeof scan.createdAt === 'number' ? scan.createdAt * 1000 : scan.createdAt
     );
-    const dayKey = date.toISOString().split('T')[0];
+    
+    // Use local date instead of UTC to match user's timezone
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const dayKey = `${year}-${month}-${day}`;
+
+    console.log('Scan date:', date, 'Key:', dayKey, 'Score:', scan.overallScore);
 
     if (!acc[dayKey]) {
       acc[dayKey] = { scores: [], date: dayKey };
@@ -164,6 +176,8 @@ export function OverallScoreChart({ scans }: OverallScoreChartProps) {
       count: data.scores.length,
     }))
     .sort((a, b) => a.date.localeCompare(b.date));
+
+  console.log('Chart data:', chartData);
 
   return (
     <Card className={`overflow-hidden transition-all duration-1000 ease-in-out ${isExpanded ? 'p-4' : 'px-4 pt-4 pb-1'}`}>

@@ -32,12 +32,19 @@ export function QueryManager({ projectId, brandVariations, domain, keywords, lan
   const [editingQuery, setEditingQuery] = useState<Query | null>(null);
   const [formData, setFormData] = useState({ queryText: '', type: 'informational' });
   const [includeBrandInQueries, setIncludeBrandInQueries] = useState(false);
-  const [isQueriesExpanded, setIsQueriesExpanded] = useState(true);
+  const [isQueriesExpanded, setIsQueriesExpanded] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     loadQueries();
   }, [projectId]);
+
+  // Auto-expand if no queries
+  useEffect(() => {
+    if (queries.length === 0) {
+      setIsQueriesExpanded(true);
+    }
+  }, [queries]);
 
   const loadQueries = async () => {
     try {
@@ -212,7 +219,8 @@ export function QueryManager({ projectId, brandVariations, domain, keywords, lan
               />
             </div>
             
-            <div className="flex gap-4 items-center">
+            {isQueriesExpanded && (
+              <div className="flex gap-4 items-center">
               <div className="flex items-center gap-2">
                 <Checkbox
                   id="includeBrand"
@@ -245,7 +253,7 @@ export function QueryManager({ projectId, brandVariations, domain, keywords, lan
                   Add Query
                 </Button>
               </div>
-            </div>
+            )}
           </div>
         </CardHeader>
         {isQueriesExpanded && (
