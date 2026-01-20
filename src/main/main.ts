@@ -105,7 +105,12 @@ autoUpdater.on('checking-for-update', () => {
 autoUpdater.on('update-available', (info) => {
   console.log('✅ Update available:', info.version);
   
-  dialog.showMessageBox(mainWindow!, {
+  if (!mainWindow) {
+    console.error('❌ mainWindow not available for update dialog');
+    return;
+  }
+  
+  dialog.showMessageBox(mainWindow, {
     type: 'info',
     title: 'Update Available',
     message: `A new version ${info.version} is available!`,
@@ -115,11 +120,30 @@ autoUpdater.on('update-available', (info) => {
     cancelId: 1
   }).then((result) => {
     if (result.response === 0) {
-      console.log('User chose to download update');
-      autoUpdater.downloadUpdate();
+      console.log('👤 User chose to download update');
+      console.log('📥 Starting download...');
+      try {
+        autoUpdater.downloadUpdate()
+          .then(() => {
+            console.log('✅ Download initiated successfully');
+          })
+          .catch((err) => {
+            console.error('❌ Download failed:', err);
+            if (mainWindow) {
+              dialog.showErrorBox(
+                'Download Failed',
+                `Failed to download update: ${err.message}\n\nPlease try again later or download manually from GitHub.`
+              );
+            }
+          });
+      } catch (err) {
+        console.error('❌ Exception during download:', err);
+      }
     } else {
-      console.log('User chose to skip update');
+      console.log('👤 User chose to skip update');
     }
+  }).catch((err) => {
+    console.error('❌ Error showing update dialog:', err);
   });
 });
 
@@ -129,6 +153,14 @@ autoUpdater.on('update-not-available', (info) => {
 
 autoUpdater.on('error', (err) => {
   console.error('❌ Error in auto-updater:', err);
+  console.error('Error details:', JSON.stringify(err, null, 2));
+  
+  if (mainWindow) {
+    dialog.showErrorBox(
+      'Auto-Update Error',
+      `An error occurred during auto-update:\n\n${err.message || err}\n\nYou can download the update manually from GitHub.`
+    );
+  }
 });
 
 autoUpdater.on('download-progress', (progressObj) => {
@@ -136,21 +168,35 @@ autoUpdater.on('download-progress', (progressObj) => {
 });
 
 autoUpdater.on('update-downloaded', (info) => {
-  console.log('✅ Update downloaded:', info.version);
+  console.log('🎉 ✅ Update downloaded successfully!', info.version);
+  console.log('Update info:', JSON.stringify(info, null, 2));
   
-  dialog.showMessageBox(mainWindow!, {
+  if (!mainWindow) {
+    console.error('❌ mainWindow not available for download complete dialog');
+    return;
+  }
+  
+  dialog.showMessageBox(mainWindow, {
     type: 'info',
     title: 'Update Ready',
-    message: 'Update downloaded successfully!',
-    detail: 'The app will now restart to install the update.',
+    message: `Version ${info.version} downloaded successfully!`,
+    detail: 'The app will restart to install the update. Your data will be preserved.',
     buttons: ['Restart Now', 'Later'],
     defaultId: 0,
-    cancelId: 1
+    cancelId: 1,
+    noLink: true
   }).then((result) => {
     if (result.response === 0) {
-      console.log('Restarting to install update...');
-      autoUpdater.quitAndInstall();
+      console.log('👤 User chose to restart and install');
+      console.log('🔄 Restarting application...');
+      setImmediate(() => {
+        autoUpdater.quitAndInstall(false, true);
+      });
+    } else {
+      console.log('👤 User chose to install later');
     }
+  }).catch((err) => {
+    console.error('❌ Error showing download complete dialog:', err);
   });
 });
 
