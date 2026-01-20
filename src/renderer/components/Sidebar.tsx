@@ -120,8 +120,8 @@ export function Sidebar({ currentView, currentProjectId, onViewChange, onNewProj
 
       {/* Footer */}
       <div className="p-4 border-t border-zinc-800">
-        <div className="text-xs text-zinc-600">
-          v1.0.0
+        <div className="text-xs text-zinc-500">
+          Version <span className="text-zinc-400">1.0.3</span>
         </div>
       </div>
     </div>

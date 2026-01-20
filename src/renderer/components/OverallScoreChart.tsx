@@ -193,12 +193,20 @@ export function OverallScoreChart({ scans }: OverallScoreChartProps) {
         >
           <ResponsiveContainer width="100%" height={80}>
             <LineChart data={chartData}>
+              <XAxis 
+                dataKey="date" 
+                hide={true}
+              />
+              <YAxis 
+                domain={[0, 100]}
+                hide={true}
+              />
               <Line 
                 type="monotone" 
                 dataKey="score" 
                 stroke="#3b82f6" 
                 strokeWidth={2}
-                dot={false}
+                dot={{ fill: '#3b82f6', r: 3 }}
               />
             </LineChart>
           </ResponsiveContainer>

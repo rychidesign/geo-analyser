@@ -193,21 +193,25 @@ export function QueryManager({ projectId, brandVariations, domain, keywords, lan
     <div className="space-y-4">
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div 
-              className="flex items-center gap-2 cursor-pointer"
-              onClick={() => setIsQueriesExpanded(!isQueriesExpanded)}
-            >
-              <ChevronDown 
-                className={`w-5 h-5 transition-transform duration-200 ${isQueriesExpanded ? '' : '-rotate-90'}`}
-              />
-              <div>
-                <CardTitle>Test Queries ({queries.length})</CardTitle>
-                <CardDescription>
-                  Questions that will be asked to AI models
-                </CardDescription>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div 
+                className="flex items-center gap-2 cursor-pointer flex-1"
+                onClick={() => setIsQueriesExpanded(!isQueriesExpanded)}
+              >
+                <div className="flex-1">
+                  <CardTitle>Test Queries ({queries.length})</CardTitle>
+                  <CardDescription>
+                    Questions that will be asked to AI models
+                  </CardDescription>
+                </div>
               </div>
+              <ChevronDown 
+                className={`w-5 h-5 transition-transform duration-200 cursor-pointer flex-shrink-0 ${isQueriesExpanded ? '' : '-rotate-90'}`}
+                onClick={() => setIsQueriesExpanded(!isQueriesExpanded)}
+              />
             </div>
+            
             <div className="flex gap-4 items-center">
               <div className="flex items-center gap-2">
                 <Checkbox
