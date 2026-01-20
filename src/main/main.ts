@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import path from 'path';
 import { initDatabase } from './database';
@@ -6,6 +6,10 @@ import { initializeIpcHandlers } from './ipc/handlers';
 
 // __dirname is available natively in CommonJS
 declare const __dirname: string;
+
+// Configure auto-updater
+autoUpdater.autoDownload = false; // Don't auto-download, ask user first
+autoUpdater.logger = console; // Enable logging
 
 process.env.DIST = app.isPackaged
   ? path.join(process.resourcesPath, 'app.asar', 'dist')
@@ -93,6 +97,63 @@ function createWindow() {
   });
 }
 
+// Auto-updater events (register before app.whenReady)
+autoUpdater.on('checking-for-update', () => {
+  console.log('🔍 Checking for updates...');
+});
+
+autoUpdater.on('update-available', (info) => {
+  console.log('✅ Update available:', info.version);
+  
+  dialog.showMessageBox(mainWindow!, {
+    type: 'info',
+    title: 'Update Available',
+    message: `A new version ${info.version} is available!`,
+    detail: 'Would you like to download it now? The app will restart after download.',
+    buttons: ['Download', 'Later'],
+    defaultId: 0,
+    cancelId: 1
+  }).then((result) => {
+    if (result.response === 0) {
+      console.log('User chose to download update');
+      autoUpdater.downloadUpdate();
+    } else {
+      console.log('User chose to skip update');
+    }
+  });
+});
+
+autoUpdater.on('update-not-available', (info) => {
+  console.log('ℹ️ Update not available. Current version:', info.version);
+});
+
+autoUpdater.on('error', (err) => {
+  console.error('❌ Error in auto-updater:', err);
+});
+
+autoUpdater.on('download-progress', (progressObj) => {
+  console.log(`⬇️ Download progress: ${progressObj.percent.toFixed(2)}%`);
+});
+
+autoUpdater.on('update-downloaded', (info) => {
+  console.log('✅ Update downloaded:', info.version);
+  
+  dialog.showMessageBox(mainWindow!, {
+    type: 'info',
+    title: 'Update Ready',
+    message: 'Update downloaded successfully!',
+    detail: 'The app will now restart to install the update.',
+    buttons: ['Restart Now', 'Later'],
+    defaultId: 0,
+    cancelId: 1
+  }).then((result) => {
+    if (result.response === 0) {
+      console.log('Restarting to install update...');
+      autoUpdater.quitAndInstall();
+    }
+  });
+});
+
 app.whenReady().then(async () => {
   // Initialize database
   try {
@@ -107,14 +168,16 @@ app.whenReady().then(async () => {
 
   createWindow();
   
-  // Check for updates (only in production)
+  // Check for updates on startup (only in production)
   if (!isDev) {
-    autoUpdater.checkForUpdatesAndNotify();
-    
-    // Check for updates every 30 minutes
-    setInterval(() => {
-      autoUpdater.checkForUpdatesAndNotify();
-    }, 30 * 60 * 1000);
+    console.log('🚀 Checking for updates on startup...');
+    setTimeout(() => {
+      autoUpdater.checkForUpdates().catch((err) => {
+        console.error('Failed to check for updates:', err);
+      });
+    }, 3000); // Wait 3 seconds after app start
+  } else {
+    console.log('⚠️ Auto-update disabled in development mode');
   }
 
   app.on('activate', () => {
@@ -122,19 +185,6 @@ app.whenReady().then(async () => {
       createWindow();
     }
   });
-});
-
-// Auto-updater events
-autoUpdater.on('update-available', () => {
-  console.log('Update available');
-});
-
-autoUpdater.on('update-downloaded', () => {
-  console.log('Update downloaded');
-  // Notify user that update will be installed on restart
-  if (mainWindow) {
-    mainWindow.webContents.send('update-downloaded');
-  }
 });
 
 app.on('window-all-closed', () => {

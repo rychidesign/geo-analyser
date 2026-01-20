@@ -1,6 +1,6 @@
 {
   "name": "geo-analyser",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Generative Engine Optimization Desktop App",
   "main": "dist-electron/main.js",
   "scripts": {

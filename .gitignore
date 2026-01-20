@@ -38,3 +38,11 @@ lerna-debug.log*
 
 # OS
 Thumbs.db
+
+# Build artifacts (only upload to GitHub Releases, not commit)
+Moje Releases/
+*.exe
+*.dmg
+*.AppImage
+*.deb
+*.rpm
