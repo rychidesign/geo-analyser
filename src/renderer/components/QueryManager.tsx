@@ -221,37 +221,38 @@ export function QueryManager({ projectId, brandVariations, domain, keywords, lan
             
             {isQueriesExpanded && (
               <div className="flex gap-4 items-center">
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="includeBrand"
-                  checked={includeBrandInQueries}
-                  onCheckedChange={(checked) => setIncludeBrandInQueries(checked === true)}
-                />
-                <Label htmlFor="includeBrand" className="text-sm cursor-pointer">
-                  Include brand in queries
-                  <span className="block text-xs text-zinc-500">
-                    {includeBrandInQueries ? 'Sentiment analysis' : 'Brand awareness'}
-                  </span>
-                </Label>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="ghost"
-                  onClick={handleGenerate}
-                  disabled={generating}
-                  className="gap-2"
-                >
-                  <Sparkles className="w-4 h-4" />
-                  {generating ? 'Generating...' : 'AI Generate'}
-                </Button>
-                <Button onClick={() => {
-                  setEditingQuery(null);
-                  setFormData({ queryText: '', type: 'informational' });
-                  setShowAddDialog(true);
-                }} className="gap-2">
-                  <Plus className="w-4 h-4" />
-                  Add Query
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="includeBrand"
+                    checked={includeBrandInQueries}
+                    onCheckedChange={(checked) => setIncludeBrandInQueries(checked === true)}
+                  />
+                  <Label htmlFor="includeBrand" className="text-sm cursor-pointer">
+                    Include brand in queries
+                    <span className="block text-xs text-zinc-500">
+                      {includeBrandInQueries ? 'Sentiment analysis' : 'Brand awareness'}
+                    </span>
+                  </Label>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="ghost"
+                    onClick={handleGenerate}
+                    disabled={generating}
+                    className="gap-2"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    {generating ? 'Generating...' : 'AI Generate'}
+                  </Button>
+                  <Button onClick={() => {
+                    setEditingQuery(null);
+                    setFormData({ queryText: '', type: 'informational' });
+                    setShowAddDialog(true);
+                  }} className="gap-2">
+                    <Plus className="w-4 h-4" />
+                    Add Query
+                  </Button>
+                </div>
               </div>
             )}
           </div>
